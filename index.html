@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cheese</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,500;1,700;1,900&family=Cormorant+Garamond:ital,wght@1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --charcoal:#3d0f1a;
+    --panel:#4f1524;
+    --panel-2:#5f1c2e;
+    --paper:#F6EBD8;
+    --safelight:#C21F3A;
+    --safelight-dim:#7a1424;
+    --amber:#D8C29A;
+    --ink:#F6EBD8;
+    --muted:#c2a488;
+    --line:#6e2a3a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background-color:var(--charcoal);
+    background-image:
+      radial-gradient(ellipse at top, #641c30 0%, #3d0f1a 62%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Cg opacity='0.16'%3E%3Cpath d='M75 42 C70 28 58 20 46 24' stroke='%23F6EBD8' stroke-width='2' fill='none'/%3E%3Cpath d='M75 42 C80 28 92 20 104 24' stroke='%23F6EBD8' stroke-width='2' fill='none'/%3E%3Cpath d='M46 24 C44 16 36 12 30 15' stroke='%2385C97A' stroke-width='2' fill='none'/%3E%3Cellipse cx='46' cy='62' rx='14' ry='16' fill='%23C21F3A'/%3E%3Cellipse cx='104' cy='62' rx='14' ry='16' fill='%23C21F3A'/%3E%3Cellipse cx='41' cy='55' rx='3.5' ry='2' fill='%23fff' opacity='0.55'/%3E%3Cellipse cx='99' cy='55' rx='3.5' ry='2' fill='%23fff' opacity='0.55'/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat:no-repeat, repeat;
+    background-attachment:fixed, fixed;
+    background-size:cover, 150px 150px;
+    color:var(--ink);
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    min-height:100vh;
+  }
+  button, input, select, textarea{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+  }
+  .bow{
+    display:inline-block;
+    line-height:0;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));
+  }
+  .bow svg{ display:block; }
+  .bow-corner{
+    position:absolute;
+    z-index:2;
+    pointer-events:none;
+  }
+  .bow-tl{ top:-10px; left:14px; transform:rotate(-8deg); }
+  .bow-tr{ top:-10px; right:14px; transform:rotate(8deg) scaleX(-1); }
+  .app{
+    max-width:1100px;
+    margin:0 auto;
+    padding:28px 20px 60px;
+  }
+  header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:1px solid var(--line);
+    padding-bottom:16px;
+    margin-bottom:22px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .brand h1{
+    font-family:'Playfair Display',serif;
+    font-style:italic;
+    font-weight:700;
+    font-size:42px;
+    letter-spacing:1px;
+    margin:0;
+    color:var(--paper);
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .brand h1 .dot{
+    width:12px;height:12px;border-radius:50%;
+    background:var(--safelight);
+    box-shadow:0 0 12px 2px var(--safelight);
+    display:inline-block;
+  }
+  .brand p{margin:2px 0 0;color:var(--muted);font-size:13px;letter-spacing:.5px;}
+  .readout{
+    font-family:'Cormorant Garamond', serif; font-style:italic;
+    font-size:12px;
+    color:var(--amber);
+    text-align:right;
+    line-height:1.6;
+  }
+  .layout{
+    display:grid;
+    grid-template-columns:1.15fr 1fr;
+    gap:26px;
+  }
+  @media(max-width:820px){ .layout{grid-template-columns:1fr;} }
+
+  /* ---- Stage ---- */
+  .stage-wrap{
+    position:relative;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:16px;
+  }
+  .viewfinder-label{
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:'Cormorant Garamond', serif; font-style:italic;
+    font-size:11px;color:var(--muted);
+    margin-bottom:10px;
+    letter-spacing:.5px;
+  }
+  .viewfinder-label .live{color:var(--safelight);}
+  .stage{
+    position:relative;
+    width:100%;
+    aspect-ratio:4/3;
+    background:#2a0a13 repeating-linear-gradient(45deg,#33101c,#33101c 10px,#2a0a13 10px,#2a0a13 20px);
+    border-radius:4px;
+    overflow:hidden;
+    border:2px solid var(--line);
+    transition:box-shadow .4s ease, border-color .4s ease;
+  }
+  .stage.live{
+    border-color:var(--safelight-dim);
+    box-shadow:0 0 0 3px rgba(232,67,42,0.12), 0 0 26px rgba(232,67,42,0.15) inset;
+  }
+  .stage video, .stage canvas{
+    position:absolute;top:0;left:0;
+    width:100%;height:100%;
+    object-fit:cover;
+  }
+  .stage video{display:none;}
+  .stage.camera-on video{display:block;}
+  .stage.camera-on canvas#photoCanvas{display:none;}
+  .placeholder{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:8px;color:var(--muted);
+    font-size:13px; text-align:center; padding:20px;
+  }
+  .placeholder .icon{font-size:34px;opacity:.6;}
+  .develop-flash{
+    position:absolute;inset:0;background:var(--safelight);
+    opacity:0; pointer-events:none;
+    animation:none;
+  }
+  @keyframes flashDev{
+    0%{opacity:.55;} 100%{opacity:0;}
+  }
+  .develop-flash.go{ animation:flashDev .5s ease-out; }
+
+  .sticker-overlay{
+    position:absolute; inset:0;
+  }
+  .sticker{
+    position:absolute;
+    width:18%;
+    aspect-ratio:1/1;
+    left:50%; top:50%;
+    transform:translate(-50%,-50%) rotate(0deg);
+    cursor:grab;
+    touch-action:none;
+  }
+  .sticker img{
+    width:100%;height:100%;display:block;
+    pointer-events:none;
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,.45));
+  }
+  .sticker.selected{outline:1px dashed var(--amber); outline-offset:4px;}
+  .sticker .handle{
+    position:absolute;
+    width:18px;height:18px;
+    border-radius:50%;
+    display:none;
+    align-items:center;justify-content:center;
+    font-size:11px;
+    cursor:pointer;
+  }
+  .sticker.selected .handle{display:flex;}
+  .sticker .del{
+    top:-9px; right:-9px;
+    background:var(--safelight); color:#fff;
+    cursor:pointer;
+  }
+  .sticker .resize{
+    bottom:-9px; right:-9px;
+    background:var(--amber); color:#221f1d;
+    cursor:nwse-resize;
+  }
+  .sticker .rotate{
+    top:-9px; left:50%; transform:translateX(-50%);
+    background:var(--paper); color:#221f1d;
+    cursor:grab;
+  }
+
+  .controls-row{
+    display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;
+  }
+  button{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-weight:600;
+    font-size:15px;
+    border:1px solid var(--line);
+    background:var(--panel-2);
+    color:var(--ink);
+    padding:10px 16px;
+    border-radius:4px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  button:hover{border-color:var(--amber); color:var(--amber);}
+  button:active{transform:scale(.97);}
+  button.primary{
+    background:var(--safelight); border-color:var(--safelight); color:#fff;
+  }
+  button.primary:hover{filter:brightness(1.1); color:#fff;}
+  button.ghost{background:transparent;}
+  button:disabled{opacity:.35; cursor:not-allowed;}
+  input[type=file]{display:none;}
+  .cam-error{
+    font-size:12px; color:var(--safelight); margin-top:8px; font-family:'Cormorant Garamond', serif; font-style:italic;
+    display:none;
+  }
+
+  /* ---- Side panel ---- */
+  .panel{
+    position:relative;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:16px;
+    display:flex; flex-direction:column;
+    min-height:100%;
+  }
+  .tabs{
+    display:flex; gap:4px; margin-bottom:16px;
+    border-bottom:1px solid var(--line);
+  }
+  .tab{
+    flex:1;
+    background:none; border:none;
+    color:var(--muted);
+    font-family:'Cormorant Garamond', serif; font-style:italic;
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:.3px;
+    text-transform:none;
+    padding:10px 4px;
+    border-bottom:2px solid transparent;
+    border-radius:0;
+  }
+  .tab.active{color:var(--paper); border-bottom-color:var(--safelight);}
+  .tab:hover{color:var(--amber); border-color:var(--line);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .section-title{
+    font-family:'Cormorant Garamond',serif;
+    font-style:italic;
+    font-weight:600;
+    display:flex; align-items:center; gap:6px;
+    font-size:14px; color:var(--muted); letter-spacing:.5px;
+    margin:0 0 10px;
+    text-transform:none;
+  }
+  .section-title .bow svg{ width:20px; height:12px; }
+
+  .filter-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+  }
+  .filter-swatch{
+    cursor:pointer;
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:6px;
+    text-align:center;
+    background:var(--panel-2);
+  }
+  .filter-swatch.active{border-color:var(--amber); box-shadow:0 0 0 1px var(--amber);}
+  .filter-swatch .sw{
+    width:100%; aspect-ratio:1/1; border-radius:3px; margin-bottom:6px;
+    background-size:cover; background-position:center;
+    background-color:#333;
+  }
+  .filter-swatch span{font-size:10.5px; color:var(--muted); letter-spacing:.3px;}
+  .filter-swatch.active span{color:var(--amber);}
+
+  .slider-row{margin-bottom:16px;}
+  .slider-row label{
+    display:flex; justify-content:space-between;
+    font-size:12px; color:var(--ink); margin-bottom:6px;
+  }
+  .slider-row label .val{color:var(--amber); font-family:'Cormorant Garamond', serif; font-style:italic;}
+  input[type=range]{
+    width:100%;
+    -webkit-appearance:none;
+    height:3px;
+    background:var(--line);
+    border-radius:2px;
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:14px;height:14px;border-radius:50%;
+    background:var(--safelight);
+    cursor:pointer;
+    border:2px solid var(--paper);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;
+    background:var(--safelight); border:2px solid var(--paper); cursor:pointer;
+  }
+
+  .sticker-tray{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+    margin-bottom:14px;
+  }
+  .tray-item{
+    aspect-ratio:1/1;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:4px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    padding:6px;
+  }
+  .tray-item:hover{border-color:var(--amber);}
+  .tray-item img{width:100%;height:100%;object-fit:contain;}
+
+  .divider{height:1px;background:var(--line);margin:16px 0;}
+
+  .draw-pad-wrap{
+    background:
+      linear-gradient(45deg,#5f1c2e 25%,transparent 25%),
+      linear-gradient(-45deg,#5f1c2e 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#5f1c2e 75%),
+      linear-gradient(-45deg,transparent 75%,#5f1c2e 75%);
+    background-size:16px 16px;
+    background-position:0 0,0 8px,8px -8px,-8px 0px;
+    background-color:#4f1524;
+    border:1px solid var(--line);
+    border-radius:4px;
+    width:100%;
+    aspect-ratio:1/1;
+    margin-bottom:10px;
+    touch-action:none;
+  }
+  #drawPad{width:100%;height:100%; display:block; cursor:crosshair;}
+  .pad-controls{
+    display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;
+  }
+  .pad-controls input[type=color]{
+    width:32px;height:32px;border:1px solid var(--line);border-radius:4px;background:none;padding:0;cursor:pointer;
+  }
+  .pad-controls input[type=range]{width:90px;}
+  .pad-controls label{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+
+  .footer-note{
+    margin-top:auto; padding-top:16px;
+    font-size:11px; color:var(--muted); line-height:1.6;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <h1>
+        <span class="bow"><svg viewBox="0 0 100 60" width="30" height="18" xmlns="http://www.w3.org/2000/svg"><path d="M48 30 C48 30 38 8 12 8 C-2 8 -2 30 12 30 C-2 30 -2 52 12 52 C38 52 48 30 48 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><path d="M52 30 C52 30 62 8 88 8 C102 8 102 30 88 30 C102 30 102 52 88 52 C62 52 52 30 52 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><circle cx="50" cy="30" r="9" fill="#C21F3A" stroke="#6e2233" stroke-width="2"/></svg></span>
+        CHEESE
+        <span class="bow"><svg viewBox="0 0 100 60" width="30" height="18" xmlns="http://www.w3.org/2000/svg"><path d="M48 30 C48 30 38 8 12 8 C-2 8 -2 30 12 30 C-2 30 -2 52 12 52 C38 52 48 30 48 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><path d="M52 30 C52 30 62 8 88 8 C102 8 102 30 88 30 C102 30 102 52 88 52 C62 52 52 30 52 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><circle cx="50" cy="30" r="9" fill="#C21F3A" stroke="#6e2233" stroke-width="2"/></svg></span>
+      </h1>
+      <p>capture — develop — decorate</p>
+    </div>
+    <div class="readout" id="readout">
+      SHUTTER · READY<br>
+      FILTER · ORIGINAL
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- STAGE -->
+    <div class="stage-wrap">
+      <span class="bow bow-corner bow-tl"><svg viewBox="0 0 100 60" width="34" height="20" xmlns="http://www.w3.org/2000/svg"><path d="M48 30 C48 30 38 8 12 8 C-2 8 -2 30 12 30 C-2 30 -2 52 12 52 C38 52 48 30 48 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><path d="M52 30 C52 30 62 8 88 8 C102 8 102 30 88 30 C102 30 102 52 88 52 C62 52 52 30 52 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><circle cx="50" cy="30" r="9" fill="#C21F3A" stroke="#6e2233" stroke-width="2"/></svg></span>
+      <span class="bow bow-corner bow-tr"><svg viewBox="0 0 100 60" width="34" height="20" xmlns="http://www.w3.org/2000/svg"><path d="M48 30 C48 30 38 8 12 8 C-2 8 -2 30 12 30 C-2 30 -2 52 12 52 C38 52 48 30 48 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><path d="M52 30 C52 30 62 8 88 8 C102 8 102 30 88 30 C102 30 102 52 88 52 C62 52 52 30 52 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><circle cx="50" cy="30" r="9" fill="#C21F3A" stroke="#6e2233" stroke-width="2"/></svg></span>
+      <div class="viewfinder-label">
+        <span id="vfStatus">VIEWFINDER · IDLE</span>
+        <span class="live" id="vfLive" style="display:none;">● LIVE</span>
+      </div>
+      <div class="stage" id="stage">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="photoCanvas"></canvas>
+        <div class="placeholder" id="placeholder">
+          <div class="icon">◎</div>
+          <div>Start the camera or upload a photo<br>to begin developing</div>
+        </div>
+        <div class="develop-flash" id="developFlash"></div>
+        <div class="sticker-overlay" id="stickerOverlay"></div>
+      </div>
+      <div class="cam-error" id="camError">CAMERA UNAVAILABLE · use "Upload Photo" instead</div>
+      <div class="controls-row">
+        <button class="primary" id="btnStartCam">Start Camera</button>
+        <button id="btnCapture" disabled>Capture</button>
+        <button id="btnUpload">Upload Photo</button>
+        <input type="file" id="fileInput" accept="image/*">
+        <button id="btnReset" class="ghost">Reset</button>
+        <button id="btnDownload" class="primary" style="margin-left:auto;">Download</button>
+      </div>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div class="panel">
+      <span class="bow bow-corner bow-tl"><svg viewBox="0 0 100 60" width="30" height="18" xmlns="http://www.w3.org/2000/svg"><path d="M48 30 C48 30 38 8 12 8 C-2 8 -2 30 12 30 C-2 30 -2 52 12 52 C38 52 48 30 48 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><path d="M52 30 C52 30 62 8 88 8 C102 8 102 30 88 30 C102 30 102 52 88 52 C62 52 52 30 52 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><circle cx="50" cy="30" r="9" fill="#C21F3A" stroke="#6e2233" stroke-width="2"/></svg></span>
+      <span class="bow bow-corner bow-tr"><svg viewBox="0 0 100 60" width="30" height="18" xmlns="http://www.w3.org/2000/svg"><path d="M48 30 C48 30 38 8 12 8 C-2 8 -2 30 12 30 C-2 30 -2 52 12 52 C38 52 48 30 48 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><path d="M52 30 C52 30 62 8 88 8 C102 8 102 30 88 30 C102 30 102 52 88 52 C62 52 52 30 52 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><circle cx="50" cy="30" r="9" fill="#C21F3A" stroke="#6e2233" stroke-width="2"/></svg></span>
+      <div class="tabs">
+        <button class="tab active" data-tab="filters">Filters</button>
+        <button class="tab" data-tab="adjust">Adjust</button>
+        <button class="tab" data-tab="stickers">Stickers</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-filters">
+        <p class="section-title"><span class="bow"><svg viewBox="0 0 100 60" width="18" height="11" xmlns="http://www.w3.org/2000/svg"><path d="M48 30 C48 30 38 8 12 8 C-2 8 -2 30 12 30 C-2 30 -2 52 12 52 C38 52 48 30 48 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><path d="M52 30 C52 30 62 8 88 8 C102 8 102 30 88 30 C102 30 102 52 88 52 C62 52 52 30 52 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><circle cx="50" cy="30" r="9" fill="#C21F3A" stroke="#6e2233" stroke-width="2"/></svg></span> Presets</p>
+        <div class="filter-grid" id="filterGrid"></div>
+      </div>
+
+      <div class="tab-panel" id="tab-adjust">
+        <p class="section-title"><span class="bow"><svg viewBox="0 0 100 60" width="18" height="11" xmlns="http://www.w3.org/2000/svg"><path d="M48 30 C48 30 38 8 12 8 C-2 8 -2 30 12 30 C-2 30 -2 52 12 52 C38 52 48 30 48 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><path d="M52 30 C52 30 62 8 88 8 C102 8 102 30 88 30 C102 30 102 52 88 52 C62 52 52 30 52 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><circle cx="50" cy="30" r="9" fill="#C21F3A" stroke="#6e2233" stroke-width="2"/></svg></span> Fine tune</p>
+        <div class="slider-row">
+          <label>Brightness <span class="val" id="v-brightness">100%</span></label>
+          <input type="range" id="s-brightness" min="40" max="160" value="100">
+        </div>
+        <div class="slider-row">
+          <label>Contrast <span class="val" id="v-contrast">100%</span></label>
+          <input type="range" id="s-contrast" min="40" max="160" value="100">
+        </div>
+        <div class="slider-row">
+          <label>Saturation <span class="val" id="v-saturate">100%</span></label>
+          <input type="range" id="s-saturate" min="0" max="200" value="100">
+        </div>
+        <div class="slider-row">
+          <label>Warmth (hue) <span class="val" id="v-hue">0°</span></label>
+          <input type="range" id="s-hue" min="-60" max="60" value="0">
+        </div>
+        <div class="slider-row">
+          <label>Vignette <span class="val" id="v-vignette">0%</span></label>
+          <input type="range" id="s-vignette" min="0" max="100" value="0">
+        </div>
+        <div class="slider-row">
+          <label>Grain <span class="val" id="v-grain">0%</span></label>
+          <input type="range" id="s-grain" min="0" max="100" value="0">
+        </div>
+        <button class="ghost" id="btnResetAdjust" style="width:100%;">Reset adjustments</button>
+      </div>
+
+      <div class="tab-panel" id="tab-stickers">
+        <p class="section-title"><span class="bow"><svg viewBox="0 0 100 60" width="18" height="11" xmlns="http://www.w3.org/2000/svg"><path d="M48 30 C48 30 38 8 12 8 C-2 8 -2 30 12 30 C-2 30 -2 52 12 52 C38 52 48 30 48 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><path d="M52 30 C52 30 62 8 88 8 C102 8 102 30 88 30 C102 30 102 52 88 52 C62 52 52 30 52 30 Z" fill="#EDE0C8" stroke="#6e2233" stroke-width="2"/><circle cx="50" cy="30" r="9" fill="#C21F3A" stroke="#6e2233" stroke-width="2"/></svg></span> Tap to place on photo</p>
+        <div class="sticker-tray" id="stickerTray"></div>
+        <div class="divider"></div>
+        <p class="section-title">Create your own</p>
+        <div class="draw-pad-wrap"><canvas id="drawPad" width="260" height="260"></canvas></div>
+        <div class="pad-controls">
+          <input type="color" id="padColor" value="#e8432a">
+          <label>Size <input type="range" id="padSize" min="2" max="24" value="6"></label>
+          <button class="ghost" id="padClear">Clear</button>
+        </div>
+        <button class="primary" id="padSave" style="width:100%;">Save sticker to tray</button>
+      </div>
+
+      <div class="footer-note">
+        Selected stickers show a delete (×), resize, and rotate handle. Drag the body to move it around the print.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---------- State ----------
+  const state = {
+    brightness:100, contrast:100, saturate:100, hue:0, sepia:0, blur:0,
+    vignette:0, grain:0, activePreset:'original'
+  };
+  let baseImage = null;      // HTMLImageElement, source of truth
+  let stream = null;
+  let stickers = [];         // {id, el, xPct, yPct, wPct, rot}
+  let selectedSticker = null;
+  let stickerIdCounter = 1;
+
+  const video = document.getElementById('video');
+  const stage = document.getElementById('stage');
+  const canvas = document.getElementById('photoCanvas');
+  const ctx = canvas.getContext('2d');
+  const placeholder = document.getElementById('placeholder');
+  const developFlash = document.getElementById('developFlash');
+  const stickerOverlay = document.getElementById('stickerOverlay');
+  const vfStatus = document.getElementById('vfStatus');
+  const vfLive = document.getElementById('vfLive');
+  const camError = document.getElementById('camError');
+  const readout = document.getElementById('readout');
+
+  const btnStartCam = document.getElementById('btnStartCam');
+  const btnCapture = document.getElementById('btnCapture');
+  const btnUpload = document.getElementById('btnUpload');
+  const fileInput = document.getElementById('fileInput');
+  const btnReset = document.getElementById('btnReset');
+  const btnDownload = document.getElementById('btnDownload');
+
+  // ---------- Presets ----------
+  const presets = [
+    {id:'original', name:'Original', v:{brightness:100,contrast:100,saturate:100,hue:0,sepia:0,blur:0}},
+    {id:'noir', name:'Noir', v:{brightness:95,contrast:130,saturate:0,hue:0,sepia:0,blur:0}},
+    {id:'sepia', name:'Sepia', v:{brightness:105,contrast:105,saturate:90,hue:0,sepia:70,blur:0}},
+    {id:'vintage', name:'Vintage', v:{brightness:105,contrast:92,saturate:75,hue:-8,sepia:35,blur:0}},
+    {id:'vivid', name:'Vivid', v:{brightness:105,contrast:120,saturate:160,hue:0,sepia:0,blur:0}},
+    {id:'cool', name:'Cool', v:{brightness:102,contrast:105,saturate:110,hue:24,sepia:0,blur:0}},
+    {id:'warm', name:'Warm', v:{brightness:108,contrast:100,saturate:105,hue:-12,sepia:20,blur:0}},
+    {id:'fade', name:'Fade', v:{brightness:112,contrast:80,saturate:70,hue:0,sepia:12,blur:0}},
+    {id:'dramatic', name:'Dramatic', v:{brightness:90,contrast:145,saturate:115,hue:0,sepia:0,blur:0}},
+  ];
+
+  function buildFilterGrid(){
+    const grid = document.getElementById('filterGrid');
+    grid.innerHTML = '';
+    presets.forEach(p=>{
+      const el = document.createElement('div');
+      el.className = 'filter-swatch' + (p.id===state.activePreset ? ' active' : '');
+      el.dataset.id = p.id;
+      const sw = document.createElement('div');
+      sw.className = 'sw';
+      el.appendChild(sw);
+      const label = document.createElement('span');
+      label.textContent = p.name;
+      el.appendChild(label);
+      el.addEventListener('click', ()=> applyPreset(p));
+      grid.appendChild(el);
+    });
+    updateSwatchPreviews();
+  }
+
+  function updateSwatchPreviews(){
+    if(!baseImage) return;
+    document.querySelectorAll('.filter-swatch').forEach(el=>{
+      const preset = presets.find(p=>p.id===el.dataset.id);
+      const sw = el.querySelector('.sw');
+      const c = document.createElement('canvas');
+      c.width = 60; c.height = 60;
+      const cctx = c.getContext('2d');
+      cctx.filter = filterString(preset.v);
+      const ratio = baseImage.width/baseImage.height;
+      let sw_, sh_, sx=0, sy=0;
+      if(ratio>1){ sh_=baseImage.height; sw_=baseImage.height; sx=(baseImage.width-sw_)/2; }
+      else { sw_=baseImage.width; sh_=baseImage.width; sy=(baseImage.height-sh_)/2; }
+      cctx.drawImage(baseImage, sx, sy, sw_, sh_, 0,0,60,60);
+      sw.style.backgroundImage = `url(${c.toDataURL()})`;
+    });
+  }
+
+  function applyPreset(p){
+    state.activePreset = p.id;
+    Object.assign(state, p.v);
+    syncSlidersFromState();
+    document.querySelectorAll('.filter-swatch').forEach(el=>{
+      el.classList.toggle('active', el.dataset.id===p.id);
+    });
+    render();
+    updateReadout();
+  }
+
+  function filterString(v){
+    v = v || state;
+    return `brightness(${v.brightness}%) contrast(${v.contrast}%) saturate(${v.saturate}%) hue-rotate(${v.hue}deg) sepia(${v.sepia}%) blur(${v.blur}px)`;
+  }
+
+  // ---------- Sliders ----------
+  const sliderIds = ['brightness','contrast','saturate','hue','vignette','grain'];
+  function syncSlidersFromState(){
+    sliderIds.forEach(k=>{
+      const s = document.getElementById('s-'+k);
+      const val = document.getElementById('v-'+k);
+      s.value = state[k];
+      val.textContent = k==='hue' ? state[k]+'°' : state[k]+'%';
+    });
+  }
+  sliderIds.forEach(k=>{
+    document.getElementById('s-'+k).addEventListener('input', (e)=>{
+      state[k] = parseInt(e.target.value,10);
+      state.activePreset = 'custom';
+      document.querySelectorAll('.filter-swatch').forEach(el=>el.classList.remove('active'));
+      document.getElementById('v-'+k).textContent = k==='hue' ? state[k]+'°' : state[k]+'%';
+      render();
+      updateReadout();
+    });
+  });
+  document.getElementById('btnResetAdjust').addEventListener('click', ()=>{
+    applyPreset(presets[0]);
+  });
+
+  function updateReadout(){
+    const label = presets.find(p=>p.id===state.activePreset);
+    readout.innerHTML = `SHUTTER · ${baseImage ? 'DEVELOPED' : 'READY'}<br>FILTER · ${label ? label.name.toUpperCase() : 'CUSTOM'}`;
+  }
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-'+tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---------- Camera ----------
+  let cameraOn = false;
+
+  btnStartCam.addEventListener('click', async ()=>{
+    if(cameraOn){ stopCamera(); return; }
+    camError.style.display='none';
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'user' }, audio:false });
+      video.srcObject = stream;
+      cameraOn = true;
+      stage.classList.add('camera-on','live');
+      vfStatus.textContent = 'VIEWFINDER · ACTIVE';
+      vfLive.style.display='inline';
+      placeholder.style.display='none';
+      btnCapture.disabled = false;
+      btnStartCam.textContent = 'Stop Camera';
+    }catch(err){
+      camError.style.display='block';
+    }
+  });
+
+  function stopCamera(){
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+    cameraOn = false;
+    stage.classList.remove('camera-on','live');
+    vfStatus.textContent = 'VIEWFINDER · IDLE';
+    vfLive.style.display='none';
+    btnCapture.disabled = true;
+    btnStartCam.textContent = 'Start Camera';
+    if(!baseImage) placeholder.style.display='flex';
+  }
+
+  btnCapture.addEventListener('click', ()=>{
+    const w = video.videoWidth, h = video.videoHeight;
+    if(!w || !h) return;
+    const tmp = document.createElement('canvas');
+    tmp.width = w; tmp.height = h;
+    const tctx = tmp.getContext('2d');
+    tctx.translate(w,0); tctx.scale(-1,1); // mirror selfie-style
+    tctx.drawImage(video, 0,0,w,h);
+    loadImageFromDataURL(tmp.toDataURL('image/jpeg', 0.92));
+    flashDevelop();
+  });
+
+  btnUpload.addEventListener('click', ()=> fileInput.click());
+  fileInput.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{ loadImageFromDataURL(ev.target.result); flashDevelop(); };
+    reader.readAsDataURL(file);
+  });
+
+  function flashDevelop(){
+    developFlash.classList.remove('go');
+    void developFlash.offsetWidth;
+    developFlash.classList.add('go');
+  }
+
+  function loadImageFromDataURL(dataURL){
+    const img = new Image();
+    img.onload = ()=>{
+      // cap dimensions for performance
+      const maxDim = 900;
+      let w = img.width, h = img.height;
+      if(Math.max(w,h) > maxDim){
+        const scale = maxDim / Math.max(w,h);
+        w = Math.round(w*scale); h = Math.round(h*scale);
+        const c = document.createElement('canvas');
+        c.width=w; c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        const scaledImg = new Image();
+        scaledImg.onload = ()=> finalizeBaseImage(scaledImg);
+        scaledImg.src = c.toDataURL('image/jpeg',0.92);
+      } else {
+        finalizeBaseImage(img);
+      }
+    };
+    img.src = dataURL;
+  }
+
+  function finalizeBaseImage(img){
+    baseImage = img;
+    canvas.width = img.width;
+    canvas.height = img.height;
+    stage.style.aspectRatio = `${img.width} / ${img.height}`;
+    placeholder.style.display = 'none';
+    stage.classList.remove('camera-on');
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+    vfStatus.textContent = 'VIEWFINDER · IDLE';
+    vfLive.style.display='none';
+    btnCapture.disabled = true;
+    applyPreset(presets[0]);
+    updateSwatchPreviews();
+    render();
+    updateReadout();
+  }
+
+  // ---------- Render pipeline ----------
+  function render(){
+    if(!baseImage) return;
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+    ctx.filter = filterString();
+    ctx.drawImage(baseImage,0,0,w,h);
+    ctx.filter = 'none';
+
+    if(state.vignette > 0){
+      const grad = ctx.createRadialGradient(w/2,h/2, Math.min(w,h)*0.25, w/2,h/2, Math.max(w,h)*0.72);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, `rgba(0,0,0,${(state.vignette/100*0.85).toFixed(2)})`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,w,h);
+    }
+
+    if(state.grain > 0){
+      const imgData = ctx.getImageData(0,0,w,h);
+      const d = imgData.data;
+      const intensity = state.grain/100 * 45;
+      for(let i=0;i<d.length;i+=4){
+        const n = (Math.random()-0.5) * intensity;
+        d[i] = clamp255(d[i]+n);
+        d[i+1] = clamp255(d[i+1]+n);
+        d[i+2] = clamp255(d[i+2]+n);
+      }
+      ctx.putImageData(imgData,0,0);
+    }
+  }
+  function clamp255(v){ return v<0?0:v>255?255:v; }
+
+  // ---------- Reset / Download ----------
+  btnReset.addEventListener('click', ()=>{
+    baseImage = null;
+    stickers.forEach(s=>s.el.remove());
+    stickers = [];
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    placeholder.style.display='flex';
+    stage.style.aspectRatio = '4/3';
+    applyPreset(presets[0]);
+    updateReadout();
+  });
+
+  btnDownload.addEventListener('click', ()=>{
+    if(!baseImage){ alert('Capture or upload a photo first.'); return; }
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = canvas.width;
+    exportCanvas.height = canvas.height;
+    const ectx = exportCanvas.getContext('2d');
+    ectx.drawImage(canvas, 0, 0);
+    stickers.forEach(s=>{
+      const cx = (s.xPct/100) * exportCanvas.width;
+      const cy = (s.yPct/100) * exportCanvas.height;
+      const size = (s.wPct/100) * exportCanvas.width;
+      ectx.save();
+      ectx.translate(cx, cy);
+      ectx.rotate(s.rot * Math.PI/180);
+      ectx.drawImage(s.img, -size/2, -size/2, size, size);
+      ectx.restore();
+    });
+    const link = document.createElement('a');
+    link.download = 'cheese-photo.png';
+    link.href = exportCanvas.toDataURL('image/png');
+    link.click();
+  });
+
+  // ---------- Default emoji stickers ----------
+  const defaultEmojis = ['⭐','❤️','🔥','✨','👍','😂','🌈','💥'];
+  function makeEmojiSticker(emoji){
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 128;
+    const cctx = c.getContext('2d');
+    cctx.font = '96px serif';
+    cctx.textAlign = 'center';
+    cctx.textBaseline = 'middle';
+    cctx.fillText(emoji, 64, 72);
+    return c.toDataURL('image/png');
+  }
+
+  function addTrayItem(dataURL){
+    const tray = document.getElementById('stickerTray');
+    const item = document.createElement('div');
+    item.className = 'tray-item';
+    const img = document.createElement('img');
+    img.src = dataURL;
+    item.appendChild(img);
+    item.addEventListener('click', ()=> placeSticker(dataURL));
+    tray.appendChild(item);
+  }
+
+  function initDefaultStickers(){
+    defaultEmojis.forEach(e=> addTrayItem(makeEmojiSticker(e)));
+  }
+
+  // ---------- Sticker placement & interaction ----------
+  function placeSticker(dataURL){
+    if(!baseImage){ alert('Capture or upload a photo first, then add stickers.'); return; }
+    const img = new Image();
+    img.onload = ()=>{
+      const id = stickerIdCounter++;
+      const el = document.createElement('div');
+      el.className = 'sticker';
+      el.dataset.id = id;
+
+      const imgEl = document.createElement('img');
+      imgEl.src = dataURL;
+      el.appendChild(imgEl);
+
+      const del = document.createElement('div');
+      del.className = 'handle del'; del.textContent = '×';
+      el.appendChild(del);
+
+      const resize = document.createElement('div');
+      resize.className = 'handle resize'; resize.textContent = '⤡';
+      el.appendChild(resize);
+
+      const rotate = document.createElement('div');
+      rotate.className = 'handle rotate'; rotate.textContent = '⟳';
+      el.appendChild(rotate);
+
+      stickerOverlay.appendChild(el);
+
+      const stickerObj = { id, el, img, xPct:50, yPct:50, wPct:18, rot:0 };
+      stickers.push(stickerObj);
+      applyStickerTransform(stickerObj);
+      selectSticker(stickerObj);
+
+      bindStickerEvents(stickerObj, del, resize, rotate);
+    };
+    img.src = dataURL;
+  }
+
+  function applyStickerTransform(s){
+    s.el.style.left = s.xPct + '%';
+    s.el.style.top = s.yPct + '%';
+    s.el.style.width = s.wPct + '%';
+    s.el.style.transform = `translate(-50%,-50%) rotate(${s.rot}deg)`;
+  }
+
+  function selectSticker(s){
+    stickers.forEach(o=> o.el.classList.remove('selected'));
+    s.el.classList.add('selected');
+    selectedSticker = s;
+    stickerOverlay.appendChild(s.el); // bring to front
+  }
+
+  function deselectAll(){
+    stickers.forEach(o=> o.el.classList.remove('selected'));
+    selectedSticker = null;
+  }
+  stage.addEventListener('pointerdown', (e)=>{
+    if(!e.target.closest('.sticker')) deselectAll();
+  });
+
+  function bindStickerEvents(s, del, resize, rotate){
+    del.addEventListener('pointerdown', (e)=>{
+      e.stopPropagation();
+      s.el.remove();
+      stickers = stickers.filter(o=>o.id!==s.id);
+      if(selectedSticker && selectedSticker.id===s.id) selectedSticker=null;
+    });
+
+    // move
+    s.el.addEventListener('pointerdown', (e)=>{
+      if(e.target===del || e.target===resize || e.target===rotate) return;
+      e.stopPropagation();
+      selectSticker(s);
+      const rect = stage.getBoundingClientRect();
+      const startX = e.clientX, startY = e.clientY;
+      const startXPct = s.xPct, startYPct = s.yPct;
+      function onMove(ev){
+        const dxPct = (ev.clientX - startX)/rect.width*100;
+        const dyPct = (ev.clientY - startY)/rect.height*100;
+        s.xPct = clampPct(startXPct + dxPct);
+        s.yPct = clampPct(startYPct + dyPct);
+        applyStickerTransform(s);
+      }
+      function onUp(){
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      }
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
+
+    // resize
+    resize.addEventListener('pointerdown', (e)=>{
+      e.stopPropagation();
+      const rect = stage.getBoundingClientRect();
+      function onMove(ev){
+        const cx = rect.left + (s.xPct/100)*rect.width;
+        const cy = rect.top + (s.yPct/100)*rect.height;
+        const dist = Math.hypot(ev.clientX-cx, ev.clientY-cy);
+        const wPct = clampRange((dist*2)/rect.width*100, 5, 90);
+        s.wPct = wPct;
+        applyStickerTransform(s);
+      }
+      function onUp(){
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      }
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
+
+    // rotate
+    rotate.addEventListener('pointerdown', (e)=>{
+      e.stopPropagation();
+      const rect = stage.getBoundingClientRect();
+      function onMove(ev){
+        const cx = rect.left + (s.xPct/100)*rect.width;
+        const cy = rect.top + (s.yPct/100)*rect.height;
+        const angle = Math.atan2(ev.clientY-cy, ev.clientX-cx) * 180/Math.PI;
+        s.rot = Math.round(angle + 90);
+        applyStickerTransform(s);
+      }
+      function onUp(){
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      }
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
+  }
+
+  function clampPct(v){ return v<0?0:v>100?100:v; }
+  function clampRange(v,min,max){ return v<min?min:v>max?max:v; }
+
+  // ---------- Sticker drawing pad ----------
+  const pad = document.getElementById('drawPad');
+  const padCtx = pad.getContext('2d');
+  const padColor = document.getElementById('padColor');
+  const padSize = document.getElementById('padSize');
+  let drawing = false, lastX=0, lastY=0;
+
+  function padPos(e){
+    const rect = pad.getBoundingClientRect();
+    const scaleX = pad.width/rect.width, scaleY = pad.height/rect.height;
+    return { x:(e.clientX-rect.left)*scaleX, y:(e.clientY-rect.top)*scaleY };
+  }
+  pad.addEventListener('pointerdown', (e)=>{
+    drawing = true;
+    const p = padPos(e); lastX=p.x; lastY=p.y;
+    padCtx.beginPath();
+    padCtx.arc(p.x,p.y, padSize.value/2, 0, Math.PI*2);
+    padCtx.fillStyle = padColor.value;
+    padCtx.fill();
+  });
+  pad.addEventListener('pointermove', (e)=>{
+    if(!drawing) return;
+    const p = padPos(e);
+    padCtx.strokeStyle = padColor.value;
+    padCtx.lineWidth = padSize.value;
+    padCtx.lineCap = 'round';
+    padCtx.lineJoin = 'round';
+    padCtx.beginPath();
+    padCtx.moveTo(lastX,lastY);
+    padCtx.lineTo(p.x,p.y);
+    padCtx.stroke();
+    lastX=p.x; lastY=p.y;
+  });
+  window.addEventListener('pointerup', ()=> drawing=false);
+
+  document.getElementById('padClear').addEventListener('click', ()=>{
+    padCtx.clearRect(0,0,pad.width,pad.height);
+  });
+  document.getElementById('padSave').addEventListener('click', ()=>{
+    // check not fully empty
+    const data = padCtx.getImageData(0,0,pad.width,pad.height).data;
+    let hasInk=false;
+    for(let i=3;i<data.length;i+=4){ if(data[i]!==0){ hasInk=true; break; } }
+    if(!hasInk){ alert('Draw something first!'); return; }
+    addTrayItem(pad.toDataURL('image/png'));
+    padCtx.clearRect(0,0,pad.width,pad.height);
+    document.querySelector('[data-tab="stickers"]').click();
+  });
+
+  // ---------- Init ----------
+  buildFilterGrid();
+  initDefaultStickers();
+  syncSlidersFromState();
+  updateReadout();
+})();
+</script>
+</body>
+</html>
